@@ -1,0 +1,14 @@
+#!/bin/bash
+#PBS -N smallball
+#PBS -l select=2:ncpus=8:mpiprocs=16:mem=2gb:interconnect=1g
+#PBS -l walltime=00:10:00
+#PBS -j oe
+
+source /etc/profile.d/modules.sh
+
+NCORES=`qstat -xf $PBS_JOBID | grep List.ncpus | sed 's/^.\{26\}//'`
+
+##cd $PBS_O_WORKDIR
+cd /home/rrojas/ece4730/hws/hw1/
+
+mpiexec -n $NCORES ./smallball

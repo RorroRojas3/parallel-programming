@@ -1,0 +1,32 @@
+Process 1, received ball from process 0
+Process 2, received ball from process 1
+Process 3, received ball from process 2
+Process 4, received ball from process 3
+Process 5, received ball from process 4
+Process 6, received ball from process 5
+Process 7, received ball from process 6
+Process 8, received ball from process 7
+Process 9, received ball from process 8
+Process 10, received ball from process 9
+Process 11, received ball from process 10
+Process 12, received ball from process 11
+Process 13, received ball from process 12
+Process 14, received ball from process 13
+Process 15, received ball from process 14
+Process 0, received ball from process 15
+ 
+ 
++------------------------------------------+ 
+| PALMETTO CLUSTER PBS RESOURCES REQUESTED | 
++------------------------------------------+ 
+ 
+mem=4gb,ncpus=16,walltime=00:10:00
+ 
+ 
++-------------------------------------+ 
+| PALMETTO CLUSTER PBS RESOURCES USED | 
++-------------------------------------+ 
+ 
+cpupercent=600,cput=00:00:06,mem=816kb,ncpus=16,vmem=12908kb,walltime=00:00:03
+ 
+ 
