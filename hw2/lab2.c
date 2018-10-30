@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 	int col_cnt;
 
 	/* size of topology grid in each direction */
-	int grid_size[2];  
+	int grid_size[2] = {0, 0};  
 	
 	/* declare several communicators */
 	MPI_Comm grid_comm, Comm_row, Comm_col;
@@ -167,7 +167,7 @@ int main(int argc, char **argv)
       dest_coords[0] = BLOCK_OWNER(i, grid_size[0], n);
       dest_coords[1] = 0;
       MPI_Cart_rank(grid_comm, dest_coords, &dest_id);
-      if (cartesian_rank == 0)
+     /* if (cartesian_rank == 0)
       {
         double *row;
         row = (double *)calloc(n, sizeof(double));
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
         }
         MPI_Send(&row, n, 
         
-      }
+      }*/
       
     }
 	}
