@@ -49,31 +49,21 @@ int main(int argc, char **argv)
 	/* get cart topology size */
 	/*	NUMBER OF NODES IN GRID, CARTESIAN DIMENSIONS, NODES IN EACH DIMENSION */
 	// DIVIDES EVERYTHING EVENLY AMONG TASKS 
-	//MPI_Dims_create(SIZE, 2, gridsz);
+	MPI_Dims_create(SIZE, 2, gridsz);
 
 	/* create 2D cart topology */
 	/*	OLD COMMUNICATOR, TWO DIMENSIONAL, SIZE OF MATRIX (R,C), NO-WRAP
 		NO-REORDER, NEW COMMUNICATOR */
-	//MPI_Cart_create(MPI_COMM_WORLD, 2, gridsz, period, 0, &Comm_2D);
+	MPI_Cart_create(MPI_COMM_WORLD, 2, gridsz, period, 0, &Comm_2D);
 
-	//MPI_Comm_rank(Comm_2D, &cartesian_rank);           /* get 2D rank … */
-	//MPI_Cart_coords(Comm_2D, cartesian_rank, 2, coords);  /* then 2D coords */
+	MPI_Comm_rank(Comm_2D, &cartesian_rank);           /* get 2D rank … */
+	MPI_Cart_coords(Comm_2D, cartesian_rank, 2, coords);  /* then 2D coords */
 
-	//MPI_Comm_split(MPI_COMM_WORLD, coords[0], coords[1], &Comm_row); 
-	//MPI_Comm_split(MPI_COMM_WORLD, coords[1], coords[0], &Comm_col);
-
-	/* find row start and end index, then same for column 
-	row_start = BLOCK_LOW(coords[0],  gridsz[0], n);
-	row_end   = BLOCK_HIGH(coords[0], gridsz[0], n);
-	row_cnt   = BLOCK_SIZE(coords[0], gridsz[0], n); 
-
-	col_start = BLOCK_LOW(coords[1],  gridsz[1], n);
-	col_end   = BLOCK_HIGH(coords[1], gridsz[1], n); 
-	col_cnt   = BLOCK_SIZE(coords[1], gridsz[1], n); 
-	*/
+	MPI_Comm_split(MPI_COMM_WORLD, coords[0], coords[1], &Comm_row); 
+	MPI_Comm_split(MPI_COMM_WORLD, coords[1], coords[0], &Comm_col); 
 
 	// READ IN THE VECTORS BY CARTESIAN PROCESS 0
-	if (RANK == 0)
+	if (cartesian_rank  == 0)
 	{
 		FILE *matrix_file, *vector_file;
 		int i, matrix_row, matrix_col, vector_row, vector_col;
@@ -137,6 +127,17 @@ int main(int argc, char **argv)
 				fscanf(vector_file, "%lf", &vector[i]);
 			}
 		}
+
+		n = matrix_row;		
+
+		/* find row start and end index, then same for column */ 
+		row_start = BLOCK_LOW(coords[0],  gridsz[0], n);
+		row_end   = BLOCK_HIGH(coords[0], gridsz[0], n);
+		row_cnt   = BLOCK_SIZE(coords[0], gridsz[0], n); 
+
+		col_start = BLOCK_LOW(coords[1],  gridsz[1], n);
+		col_end   = BLOCK_HIGH(coords[1], gridsz[1], n); 
+		col_cnt   = BLOCK_SIZE(coords[1], gridsz[1], n);
 		
 	}
 
