@@ -1,8 +1,15 @@
+/*
+	Name: Rodrigo Ignacio Rojas Garcia
+	HW#2
+*/
+
+// LIBRARY DECLARATION SECTION
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <mpi.h>
 
+// DEFINE DECLARATION SECTION
 #define BLOCK_LOW(id, p, n) ((id)*(n)/(p))
 #define BLOCK_HIGH(id, p, n) (BLOCK_LOW((id)+1, p, n) -1)
 #define BLOCK_SIZE(id, p, n) (BLOCK_LOW((id)+1, p, n)-BLOCK_LOW(id, p, n))
