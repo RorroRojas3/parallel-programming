@@ -82,13 +82,13 @@ int main(int argc, char **argv)
 		matrix_row = matrix_col = vector_row = vector_col = 0;
 
 		/* OBTAINS INFORMATION FROM COMMAND LINE TO OPEN/CREATE FILES */
-		matrix_file = fopen("output_file1", "rb");
+		matrix_file = fopen("matrix", "rb");
 		if (matrix_file == NULL)
 		{
 			printf("Error, could not read first input file\n");
 			exit(1);
 		}
-		vector_file = fopen("output_file2", "rb");
+		vector_file = fopen("vector", "rb");
 		if (vector_file == NULL)
 		{
 			printf("Error, could not read second input file\n");
