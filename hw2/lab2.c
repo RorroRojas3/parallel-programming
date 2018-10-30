@@ -31,6 +31,7 @@ int main(int argc, char **argv)
 	int dest_coords[2];
 	int dest_id;
 	int grid_coords[2];
+	
 
 	/* size of topology grid in each direction */
 	int grid_size[2] = {0, 0};  
