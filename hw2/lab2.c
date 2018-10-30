@@ -161,6 +161,25 @@ int main(int argc, char **argv)
     
     // SENDS MATRIX SIZE TO OTHER CARTERSIAN PROCESSES 
     MPI_Bcast(&n, 1, MPI_INT, cartesian_rank, grid_comm);
+    
+    for (i = 0; i < n; i++)
+    {
+      dest_coords[0] = BLOCK_OWNER(i, grid_size[0], n);
+      dest_coords[1] = 0;
+      MPI_Cart_rank(grid_comm, dest_coords, &dest_id);
+      if (cartesian_rank == 0)
+      {
+        double *row;
+        row = (double *)calloc(n, sizeof(double));
+        for (j = 0; j <  n; j++)
+        {
+          row[j] = matrix[i][j];
+        }
+        MPI_Send(&row, n, 
+        
+      }
+      
+    }
 	}
  
 	// OTHER CARTESIAN PROCESSES 
