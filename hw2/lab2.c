@@ -168,20 +168,16 @@ int main(int argc, char **argv)
         
         for (i = 0; i < n; i++)
         {
-        dest_coords[0] = BLOCK_OWNER(i, grid_size[0], n);
-        dest_coords[1] = 0;
-        MPI_Cart_rank(grid_comm, dest_coords, &dest_id);
-        /* if (cartesian_rank == 0)
-        {
-            double *row;
-            row = (double *)calloc(n, sizeof(double));
-            for (j = 0; j <  n; j++)
-            {
-            row[j] = matrix[i][j];
-            }
-            MPI_Send(&row, n, 
-            
-        }*/
+        	dest_coords[0] = BLOCK_OWNER(i, grid_size[0], n);
+        	dest_coords[1] = 0;
+        	MPI_Cart_rank(grid_comm, dest_coords, &dest_id);
+    		double *b_vector;
+			b_vector = (double *)calloc(vector_row, sizeof(double));
+			for (i = 0; i < n; i++)
+			{	
+				b_vector[i] = vector[i];
+				printf("%lf\n", b_vector[i]);
+			}
         
         }
 	}
@@ -212,4 +208,6 @@ int main(int argc, char **argv)
 	
   
 	MPI_Finalize();
+
+	return 0;
 }
