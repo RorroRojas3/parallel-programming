@@ -205,6 +205,9 @@ int main(int argc, char **argv)
         MPI_Cart_coords(grid_comm, cartesian_rank, 2, grid_coords);
         printf("Rank: %d, Coords: %d %d\n", cartesian_rank, grid_coords[0], grid_coords[1]); 
   }  
+  
+  MPI_Barrier(grid_comm);
+  
 
 	
   
