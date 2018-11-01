@@ -220,10 +220,11 @@ int main(int argc, char **argv)
 	if (coords[1] == 0)
 	{
 		MPI_Scatter(b_vector, size, MPI_DOUBLE, &div_B_vector, size, MPI_DOUBLE, 0, column_comm);
-		for (i = 0; i < size; i++)
+		/*for (i = 0; i < size; i++)
 		{
 			printf("Rank: %d, B: %lf\n", cartesian_rank, div_B_vector[i]);
-		}
+		}*/
+		//MPI_Bcast(&div_B_vector, size, MPI_DOUBLE, cartesian_rank, row_comm);
 	}
 	
 	MPI_Barrier(grid_comm);
@@ -243,13 +244,14 @@ int main(int argc, char **argv)
 
 	MPI_Barrier(grid_comm);
 
-	row_start = BLOCK_LOW(coords[0],  grid_size[0], num_of_items);
+	/*row_start = BLOCK_LOW(coords[0],  grid_size[0], num_of_items);
 	row_end   = BLOCK_HIGH(coords[0], grid_size[0], num_of_items);
 	row_cnt   = BLOCK_SIZE(coords[0], grid_size[0], num_of_items); 
 
 	col_start = BLOCK_LOW(coords[1],  grid_size[1], num_of_items);
 	col_end   = BLOCK_HIGH(coords[1], grid_size[1], num_of_items); 
 	col_cnt   = BLOCK_SIZE(coords[1], grid_size[1], num_of_items); 
+	*/
 
 	for (i = 0; i < 4; i++)
 	{
@@ -257,7 +259,7 @@ int main(int argc, char **argv)
 		for (j = 0; j < 4; j++)
 		{
 			k = (i * 4) + j;
-			result = div_matrix_A[k]; //* b_vector[j];
+			result = div_matrix_A[k] * div_B_vector[j]; //* b_vector[j];
 			printf("%lf ", result);
 		}
 		printf("\n");
