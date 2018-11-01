@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 	FILE *matrix_file, *vector_file;
 	int matrix_row, matrix_col, vector_row, vector_col;
 	double *matrix, *vector;
-	double *b_vector;
+	double *b_vector, *matrix_A;
 	matrix_row = matrix_col = vector_row = vector_col = 0;
 	
 
@@ -164,6 +164,7 @@ int main(int argc, char **argv)
 		}
 
 		MPI_Send(vector, num_of_items, MPI_DOUBLE, 0, 1, grid_comm);
+		MPI_Send(matrix, num_of_items * num_of_items, MPI_DOUBLE, 0, 1, grid_comm);
 		/*
         for (i = 0; i < num_of_items; i++)
         {
@@ -185,12 +186,12 @@ int main(int argc, char **argv)
 	// RECEIVES SIZE OF ARRAY
 	MPI_Recv(&num_of_items, 1, MPI_INT, 0, 1, grid_comm, MPI_STATUS_IGNORE);
 	b_vector = (double *)calloc(num_of_items, sizeof(double));
+	matrix_A = (double *)calloc(num_of_items * num_of_items, sizeof(double));
 	if (cartesian_rank == 0)
 	{
 		MPI_Recv(b_vector, num_of_items, MPI_DOUBLE, 0, 1, grid_comm, MPI_STATUS_IGNORE);
+		MPI_Recv(matrix_A, (num_of_items * num_of_items), MPI_DOUBLE, 0, 1, grid_comm, MPI_STATUS_IGNORE);
 	}
-
-	
 
 	MPI_Barrier(grid_comm);
 	MPI_Cart_coords(grid_comm, cartesian_rank, 2, grid_coords);
@@ -198,9 +199,12 @@ int main(int argc, char **argv)
 	if (grid_coords[1] == 0)
 	{
 		MPI_Scatter(b_vector, num_of_items, MPI_DOUBLE, b_vector, num_of_items, MPI_DOUBLE, 0, row_comm);
-		
-		printf("Rank: %d %lf\n", cartesian_rank, b_vector[7]);
 	}
+
+	MPI_Scatter(matrix_A, (num_of_items * num_of_items), MPI_DOUBLE, matrix_A, (num_of_items * num_of_items), MPI_DOUBLE, 0, grid_comm);
+	printf("Rank: %d, Matrix A: %lf\n", cartesian_rank, matrix_A[7]);
+
+	printf("Rank: %d %lf\n", cartesian_rank, b_vector[7]);
 
 	MPI_Barrier(grid_comm);
   
