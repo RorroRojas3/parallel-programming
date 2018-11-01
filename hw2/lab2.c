@@ -166,17 +166,21 @@ int main(int argc, char **argv)
         // SENDS MATRIX SIZE TO OTHER CARTERSIAN PROCESSES 
         MPI_Bcast(&n, 1, MPI_INT, cartesian_rank, grid_comm);
         
+        // SENDS "B" VECTOR TO OTHER CARTESIAN PROCESSES
+        MPI_Bcast(vector, n, MPI_DOUBLE, cartesian_rank, grid_comm);
+        
         for (i = 0; i < n; i++)
         {
         	dest_coords[0] = BLOCK_OWNER(i, grid_size[0], n);
         	dest_coords[1] = 0;
         	MPI_Cart_rank(grid_comm, dest_coords, &dest_id);
-    		double *b_vector;
-			b_vector = (double *)calloc(vector_row, sizeof(double));
-			for (i = 0; i < n; i++)
+    		
+			for (j = 0; j < n; j++)
 			{	
-				b_vector[i] = vector[i];
-				printf("%lf\n", b_vector[i]);
+				b_vector[j] = vector[j];
+				a_row[j] = matrix[i][j];
+				//printf("%lf ", b_vector[j]);
+				//printf("%lf ", a_row[j]);
 			}
         
         }
@@ -185,9 +189,17 @@ int main(int argc, char **argv)
 	// OTHER CARTESIAN PROCESSES 
     else
     {
+    	// VARIABLE DECLARATION SECTION
+    	double *b_vector;
+    
         // RECEIVES SIZE OF MATRIX FROM CARTESIAN RANK 0
-        MPI_Bcast(&buffer, 1, MPI_INT, 0, grid_comm );
+        MPI_Bcast(&buffer, 1, MPI_INT, 0, grid_comm);
         n = buffer;
+        printf("n: %d\n", n);
+        
+        // ALLOCATES MEMORY FOR VECTOR "B" AND RECEIVES IT FROM CARTESIAN RANK 0
+        b_vector = (double *)calloc(n, sizeof(double));
+        MPI_Bcast(b_vector, n, MPI_DOUBLE, 0, grid_comm);
 
         /* find row start and end index, then same for column */ 
         row_start = BLOCK_LOW(coords[0],  grid_size[0], n);
@@ -196,13 +208,11 @@ int main(int argc, char **argv)
         col_start = BLOCK_LOW(coords[1],  grid_size[1], n);
         col_end   = BLOCK_HIGH(coords[1], grid_size[1], n); 
         col_cnt   = BLOCK_SIZE(coords[1], grid_size[1], n);
-        printf("Rank: %d, Row Start: %d, Row End: %d, Row Count: %d\n", 
-                cartesian_rank, row_start, row_end, row_cnt);
-        printf("Rank: %d, Col Start: %d, Col End: %d, Col Count: %d\n", 
-                cartesian_rank, col_start, col_end, col_cnt);
+       // printf("Rank: %d, Row Start: %d, Row End: %d, Row Count: %d\n", cartesian_rank, row_start, row_end, row_cnt);
+       // printf("Rank: %d, Col Start: %d, Col End: %d, Col Count: %d\n", cartesian_rank, col_start, col_end, col_cnt);
 
         MPI_Cart_coords(grid_comm, cartesian_rank, 2, grid_coords);
-        printf("Rank: %d, Coords: %d %d\n", cartesian_rank, grid_coords[0], grid_coords[1]); 
+        //printf("Rank: %d, Coords: %d %d\n", cartesian_rank, grid_coords[0], grid_coords[1]); 
   }  
 
 	
