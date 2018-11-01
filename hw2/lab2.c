@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     int buffer;
 	int offset; 
 	//int root; 
-	int n;  /* total data items in each dim */
+	int num_of_items;  /* total data items in each dim */
 	//int *rtmp, *ctmp; 
 	offset = 0; 
 	int SIZE, RANK; /* original rank and size */
@@ -38,6 +38,7 @@ int main(int argc, char **argv)
 	int dest_coords[2];
 	int dest_id;
 	int grid_coords[2];
+	double *b_vector;
 	
 
 	/* size of topology grid in each direction */
@@ -143,56 +144,66 @@ int main(int argc, char **argv)
 				fscanf(vector_file, "%lf", &vector[i]);
 			}
 		}
+		
+		num_of_items = matrix_row;
+		
+		// CLOSE OPENED FILES 
+		fclose(matrix_file);
+		fclose(vector_file);
 
-		n = matrix_row;		
-
-		/* find row start and end index, then same for column */ 
+		/* find row start and end index, then same for column 
 		row_start = BLOCK_LOW(coords[0],  grid_size[0], n);
 		row_end   = BLOCK_HIGH(coords[0], grid_size[0], n);
 		row_cnt   = BLOCK_SIZE(coords[0], grid_size[0], n); 
 
 		col_start = BLOCK_LOW(coords[1],  grid_size[1], n);
 		col_end   = BLOCK_HIGH(coords[1], grid_size[1], n); 
-		col_cnt   = BLOCK_SIZE(coords[1], grid_size[1], n);
+		col_cnt   = BLOCK_SIZE(coords[1], grid_size[1], n); */
     
-        printf("Rank: %d, Row Start: %d, Row End: %d, Row Count: %d\n", 
-                cartesian_rank, row_start, row_end, row_cnt);
-        printf("Rank: %d, Col Start: %d, Col End: %d, Col Count: %d\n", 
-                cartesian_rank, col_start, col_end, col_cnt);
+       // printf("Rank: %d, Row Start: %d, Row End: %d, Row Count: %d\n", cartesian_rank, row_start, row_end, row_cnt);
+       // printf("Rank: %d, Col Start: %d, Col End: %d, Col Count: %d\n", cartesian_rank, col_start, col_end, col_cnt);
         
         MPI_Cart_coords(grid_comm, cartesian_rank, 2, grid_coords);
-        printf("Rank: %d, Coords: %d %d\n\n", cartesian_rank, grid_coords[0], grid_coords[1]); 
+       // printf("Rank: %d, Coords: %d %d\n\n", cartesian_rank, grid_coords[0], grid_coords[1]); 
         
         // SENDS MATRIX SIZE TO OTHER CARTERSIAN PROCESSES 
-        MPI_Bcast(&n, 1, MPI_INT, cartesian_rank, grid_comm);
+        MPI_Bcast(&num_of_items, 1, MPI_INT, cartesian_rank, grid_comm);
         
         // SENDS "B" VECTOR TO OTHER CARTESIAN PROCESSES
-        MPI_Bcast(vector, n, MPI_DOUBLE, cartesian_rank, grid_comm);
+        MPI_Bcast(vector, num_of_items, MPI_DOUBLE, cartesian_rank, grid_comm);
         
-        for (i = 0; i < n; i++)
+        /*for (i = 0; i < n; i++)
         {
         	dest_coords[0] = BLOCK_OWNER(i, grid_size[0], n);
         	dest_coords[1] = 0;
         	MPI_Cart_rank(grid_comm, dest_coords, &dest_id);
-    	}		
+    	}*/		
 	
 	}
  
+ 	
+ 	MPI_Bcast(&buffer, 1, MPI_INT, 0, grid_comm);
+ 	num_of_items = buffer;
+ 	b_vector = (double *)calloc(num_of_items, sizeof(double));
+ 	MPI_Bcast(b_vector, num_of_items, MPI_DOUBLE, 0, grid_comm);
+ 	printf("Rank: %d, Vector: %lf\n", cartesian_rank, b_vector[0]);
+ 	printf("Rank: %d, Vector: %lf\n", cartesian_rank, num_of_items);
+ 	
 	// OTHER CARTESIAN PROCESSES 
-    else
+    /*else
     {
     	// VARIABLE DECLARATION SECTION
-    	double *b_vector;
+    	
     
         // RECEIVES SIZE OF MATRIX FROM CARTESIAN RANK 0
-        MPI_Bcast(&buffer, 1, MPI_INT, 0, grid_comm);
+        
         n = buffer;
         
         // ALLOCATES MEMORY FOR VECTOR "B" AND RECEIVES IT FROM CARTESIAN RANK 0
         b_vector = (double *)calloc(n, sizeof(double));
         MPI_Bcast(b_vector, n, MPI_DOUBLE, 0, grid_comm);
 
-        /* find row start and end index, then same for column */ 
+        /* find row start and end index, then same for column  
         row_start = BLOCK_LOW(coords[0],  grid_size[0], n);
         row_end   = BLOCK_HIGH(coords[0], grid_size[0], n);
         row_cnt   = BLOCK_SIZE(coords[0], grid_size[0], n); 
@@ -204,7 +215,7 @@ int main(int argc, char **argv)
 
         MPI_Cart_coords(grid_comm, cartesian_rank, 2, grid_coords);
         printf("Rank: %d, Coords: %d %d\n", cartesian_rank, grid_coords[0], grid_coords[1]); 
-  }  
+  } */
   
   MPI_Barrier(grid_comm);
   
