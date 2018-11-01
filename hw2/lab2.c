@@ -41,7 +41,10 @@ int main(int argc, char **argv)
 	int matrix_row, matrix_col, vector_row, vector_col;
 	double *matrix, *vector;
 	double *b_vector, *matrix_A;
+	double *div_matrix_A;
+	double result  = 0;
 	matrix_row = matrix_col = vector_row = vector_col = 0;
+	int size;
 	
 
 	/* size of topology grid in each direction */
@@ -85,9 +88,6 @@ int main(int argc, char **argv)
 	// READ IN THE VECTORS BY CARTESIAN PROCESS 0
 	if (cartesian_rank  == 0)
 	{
-		// VARIABLE DECLARATION SECTION
-		
-   
 		// OBTAINS INFORMATION FROM COMMAND LINE TO OPEN/CREATE FILES 
 		matrix_file = fopen("matrix", "rb");
 		if (matrix_file == NULL)
@@ -131,17 +131,11 @@ int main(int argc, char **argv)
 		}
 		for (i = 0; i < vector_row; i++)
 		{
-			for (j = 0; j < vector_col; j++)
-			{
-				fscanf(vector_file, "%lf", &vector[i]);
-			}
+			fscanf(vector_file, "%lf", &vector[i]);
 		}
 		
 		num_of_items = matrix_row;
-		
-		// CLOSE OPENED FILES 
-		fclose(matrix_file);
-		fclose(vector_file);
+		//printf("Items: %d \n", num_of_items);
 
 		//find row start and end index, then same for column 
 		row_start = BLOCK_LOW(coords[0],  grid_size[0], num_of_items);
@@ -158,11 +152,13 @@ int main(int argc, char **argv)
         MPI_Cart_coords(grid_comm, cartesian_rank, 2, grid_coords);
         // printf("Rank: %d, Coords: %d %d\n\n", cartesian_rank, grid_coords[0], grid_coords[1]); 
         
+		// SEND ARRAY SIZE TO ALL CARTESIAN PROCESSES
 		for (i = 0; i < SIZE; i++)
 		{
 			MPI_Send(&num_of_items, 1, MPI_INT, i, 1, grid_comm);
 		}
 
+		// SENDS "B" VECTOR AND "A" MATRIX TO CARTESIAN RANK 0
 		MPI_Send(vector, num_of_items, MPI_DOUBLE, 0, 1, grid_comm);
 		MPI_Send(matrix, num_of_items * num_of_items, MPI_DOUBLE, 0, 1, grid_comm);
 		/*
@@ -181,32 +177,97 @@ int main(int argc, char **argv)
 			//printf("Rank: %d\n", dest_id);
 			
     	} */
+
+		// FREE ALLOCATED MEMORY
+		free(matrix);
+		free(vector);
+
+		// CLOSE OPENED FILES 
+		fclose(matrix_file);
+		fclose(vector_file);
 	}
 
 	// RECEIVES SIZE OF ARRAY
 	MPI_Recv(&num_of_items, 1, MPI_INT, 0, 1, grid_comm, MPI_STATUS_IGNORE);
+	printf("Items: %d \n", num_of_items);
+	size = (num_of_items / grid_size[1]);
+	//div_B_vector = (double *)calloc(4, sizeof(double));
+	double div_B_vector[4];
+	div_matrix_A = (double *)calloc(size * size, sizeof(double));
 	b_vector = (double *)calloc(num_of_items, sizeof(double));
 	matrix_A = (double *)calloc(num_of_items * num_of_items, sizeof(double));
+	
 	if (cartesian_rank == 0)
 	{
 		MPI_Recv(b_vector, num_of_items, MPI_DOUBLE, 0, 1, grid_comm, MPI_STATUS_IGNORE);
 		MPI_Recv(matrix_A, (num_of_items * num_of_items), MPI_DOUBLE, 0, 1, grid_comm, MPI_STATUS_IGNORE);
 	}
+		
 
 	MPI_Barrier(grid_comm);
 	MPI_Cart_coords(grid_comm, cartesian_rank, 2, grid_coords);
 
-	if (grid_coords[1] == 0)
-	{
-		MPI_Scatter(b_vector, num_of_items, MPI_DOUBLE, b_vector, num_of_items, MPI_DOUBLE, 0, row_comm);
-	}
+	// SCATTER MATRIX A AMONG ALL PROCESSES
+	MPI_Scatter(matrix_A, size * size, MPI_DOUBLE, div_matrix_A, size * size, MPI_DOUBLE, 0, grid_comm);
 
-	MPI_Scatter(matrix_A, (num_of_items * num_of_items), MPI_DOUBLE, matrix_A, (num_of_items * num_of_items), MPI_DOUBLE, 0, grid_comm);
-	printf("Rank: %d, Matrix A: %lf\n", cartesian_rank, matrix_A[7]);
+	free(matrix_A);
 
-	printf("Rank: %d %lf\n", cartesian_rank, b_vector[7]);
 
 	MPI_Barrier(grid_comm);
+
+	// SCATTER "B" VECTOR ACROSS COLUMN COMMUNICATOR
+	//printf("Rank: %d, Coords: (%d, %d)\n", cartesian_rank, coords[0], coords[1]);
+	if (coords[1] == 0)
+	{
+		MPI_Scatter(b_vector, size, MPI_DOUBLE, &div_B_vector, size, MPI_DOUBLE, 0, column_comm);
+		for (i = 0; i < size; i++)
+		{
+			printf("Rank: %d, B: %lf\n", cartesian_rank, div_B_vector[i]);
+		}
+	}
+	
+	MPI_Barrier(grid_comm);
+
+
+
+	
+	
+
+	/*
+	MPI_Scatter(matrix_A, (num_of_items * num_of_items), MPI_DOUBLE, matrix_A, (num_of_items * num_of_items), MPI_DOUBLE, 0, grid_comm);
+	printf("Rank: %d, Matrix A: %lf\n", cartesian_rank, matrix_A[7]);
+	*/
+
+	MPI_Barrier(grid_comm);
+	
+
+	MPI_Barrier(grid_comm);
+
+	row_start = BLOCK_LOW(coords[0],  grid_size[0], num_of_items);
+	row_end   = BLOCK_HIGH(coords[0], grid_size[0], num_of_items);
+	row_cnt   = BLOCK_SIZE(coords[0], grid_size[0], num_of_items); 
+
+	col_start = BLOCK_LOW(coords[1],  grid_size[1], num_of_items);
+	col_end   = BLOCK_HIGH(coords[1], grid_size[1], num_of_items); 
+	col_cnt   = BLOCK_SIZE(coords[1], grid_size[1], num_of_items); 
+
+	for (i = 0; i < 4; i++)
+	{
+		printf("Rank: %d, ", cartesian_rank);
+		for (j = 0; j < 4; j++)
+		{
+			k = (i * 4) + j;
+			result = div_matrix_A[k]; //* b_vector[j];
+			printf("%lf ", result);
+		}
+		printf("\n");
+	}
+
+	// MATRIX MULTIPLICATION 
+	//if (cartesian_rank == 0)
+	//{
+		
+//	}
   
 
 	
