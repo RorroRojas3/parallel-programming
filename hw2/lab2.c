@@ -14,7 +14,7 @@
 #define BLOCK_HIGH(id, p, n) (BLOCK_LOW((id)+1, p, n) -1)
 #define BLOCK_SIZE(id, p, n) (BLOCK_LOW((id)+1, p, n)-BLOCK_LOW(id, p, n))
 #define BLOCK_OWNER(index, p, n) (((p)*((index)+1)-1)/(n))
-
+#define MAXLENGTH 256
 
 int main(int argc, char **argv)
 {
@@ -37,16 +37,18 @@ int main(int argc, char **argv)
 	int dest_coords[2];
 	int dest_id;
 	int grid_coords[2];
-	FILE *matrix_file, *vector_file;
+	FILE *matrix_file, *vector_file, *output_file;
 	int matrix_row, matrix_col, vector_row, vector_col;
 	double *matrix, *vector;
 	double *b_vector, *matrix_A;
 	double *div_matrix_A;
 	double *div_B_vector;
-	double *result;
+	double result;
+	double *multiplication_result;
 	double *c_vector;
 	matrix_row = matrix_col = vector_row = vector_col = 0;
 	int size;
+	char file_name[MAXLENGTH];
 	
 
 	/* size of topology grid in each direction */
@@ -137,22 +139,8 @@ int main(int argc, char **argv)
 		}
 		
 		num_of_items = matrix_row;
-		//printf("Items: %d \n", num_of_items);
-
-		//find row start and end index, then same for column 
-		row_start = BLOCK_LOW(coords[0],  grid_size[0], num_of_items);
-		row_end   = BLOCK_HIGH(coords[0], grid_size[0], num_of_items);
-		row_cnt   = BLOCK_SIZE(coords[0], grid_size[0], num_of_items); 
-
-		col_start = BLOCK_LOW(coords[1],  grid_size[1], num_of_items);
-		col_end   = BLOCK_HIGH(coords[1], grid_size[1], num_of_items); 
-		col_cnt   = BLOCK_SIZE(coords[1], grid_size[1], num_of_items); 
-    
-        //printf("Rank: %d, Row Start: %d, Row End: %d, Row Count: %d\n", cartesian_rank, row_start, row_end, row_cnt);
-        //printf("Rank: %d, Col Start: %d, Col End: %d, Col Count: %d\n", cartesian_rank, col_start, col_end, col_cnt);
         
         MPI_Cart_coords(grid_comm, cartesian_rank, 2, grid_coords);
-        // printf("Rank: %d, Coords: %d %d\n\n", cartesian_rank, grid_coords[0], grid_coords[1]); 
         
 		// SEND ARRAY SIZE TO ALL CARTESIAN PROCESSES
 		for (i = 0; i < SIZE; i++)
@@ -198,8 +186,8 @@ int main(int argc, char **argv)
 	div_matrix_A = (double *)calloc(size * size, sizeof(double));
 	b_vector = (double *)calloc(num_of_items, sizeof(double));
 	matrix_A = (double *)calloc(num_of_items * num_of_items, sizeof(double));
-	result = (double *)calloc(size, sizeof(double));
-	c_vector = (double *)calloc(size * size, sizeof(double));
+	multiplication_result = (double *)calloc(size, sizeof(double));
+	c_vector = (double *)calloc(size, sizeof(double));
 
 	if (cartesian_rank == 0)
 	{
@@ -238,34 +226,28 @@ int main(int argc, char **argv)
 	col_cnt   = BLOCK_SIZE(coords[1], grid_size[1], num_of_items); 
 	*/
 
-	
-	for (i = 0; i < size * size; i++)
+	// MATRIX MULTIPLICATION
+	for (i = 0; i < size; i++)
 	{
-		if (cartesian_rank == 0 || cartesian_rank == 1)
+		result = 0;
+		for (j = 0; j < size; j++)
 		{
-			
-			result[i] = div_matrix_A[i]; //* div_B_vector[j]; //* b_vector[j];
-			printf("%lf ", result[i]);
-			if (i % size == 0 && i != 0) {
-				printf("Rank: %d", cartesian_rank);
-				printf("\n");
-			}
+			k = (i * 4) + j;
+			result += (div_matrix_A[k] * div_B_vector[j]);
 		}
+		multiplication_result[i] = result;
 	}
 
+	MPI_Barrier(grid_comm);
+	MPI_Reduce(multiplication_result, c_vector, size, MPI_DOUBLE, MPI_SUM, 0, row_comm);
 
-	MPI_Reduce(result, c_vector, size * size, MPI_DOUBLE, MPI_SUM, 0, row_comm);
-	
-	for (i = 0; i < (size * size); i++)
+	if (coords[1] == 0)
 	{
-		if (cartesian_rank == 0)
-		{
-			if (i % size == 0 && i != 0) printf("\n");
-			printf("%lf ", c_vector[i]);
-		}
+		memset(file_name, '\0', sizeof(file_name));
+		sprintf(file_name, "vector-%d.txt", cartesian_rank);
+		output_file = fopen(file_name, "wb");
+		fprintf()
 	}
-
-
 	
   
 	MPI_Finalize();
