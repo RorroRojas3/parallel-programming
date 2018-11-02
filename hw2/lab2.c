@@ -21,61 +21,42 @@ int main(int argc, char **argv)
     // VARIABLE DECLARATION SECTION
     int i, j, k;
 	int offset; 
-	//int root; 
 	int num_of_items;  /* total data items in each dim */
-	//int *rtmp, *ctmp; 
-	offset = 0; 
 	int SIZE, RANK; /* original rank and size */
 	int cartesian_rank; /* local rank in the 2D topology */
 	int coords[2]; /* local coordinates in the 2D topology */
-	int row_start;
-	int row_end;
-	int row_cnt;
-	int col_start;
-	int col_end;
-	int col_cnt;
-	int dest_coords[2];
-	int dest_id;
-	int grid_coords[2];
-	FILE *matrix_file, *vector_file, *output_file;
+	int row_start, row_end, row_count;
+	int col_start, col_end, col_count;
 	int matrix_row, matrix_col, vector_row, vector_col;
+	int size;
 	double *matrix, *vector;
 	double *b_vector, *matrix_A;
-	double *div_matrix_A;
-	double *div_B_vector;
-	double result;
-	double *multiplication_result;
+	double *div_matrix_A, *div_vector_B;
+	double *multiplication_result, result;
 	double *c_vector;
-	matrix_row = matrix_col = vector_row = vector_col = 0;
-	int size;
 	char file_name[MAXLENGTH];
-	
+	FILE *matrix_file, *vector_file, *output_file;
+	matrix_row = matrix_col = vector_row = vector_col = 0;
+	offset = 0; 
 
-	/* size of topology grid in each direction */
+	// SIZE OF TOPOLOGY IN EACH DIRECTION
 	int grid_size[2] = {0, 0};  
 	
-	/* declare several communicators */
+	// CREATE COMMUNICATORS 
 	MPI_Comm grid_comm, row_comm, column_comm;
 
-	/* arrays with info about the 2D topology */
-	int period[2] = {0, 0}; /* do not wrap around cart dims */
+	// ARRAY WITH INFORMATION REGARDING TOPOLOGY (NO WRAP AROUND)
+	int period[2] = {0, 0}; 
 
 	// MPI INITIALIZATION 
 	MPI_Init(&argc, &argv);
-
-	/* must read n from file or user */
-
 	MPI_Comm_size(MPI_COMM_WORLD, &SIZE);
 	MPI_Comm_rank(MPI_COMM_WORLD, &RANK);
 
-	/* get cart topology size */
-	/*	NUMBER OF NODES IN GRID, CARTESIAN DIMENSIONS, NODES IN EACH DIMENSION */
-	// DIVIDES EVERYTHING EVENLY AMONG TASKS 
+	// DETERMINES TOPOLOGY SIZE
 	MPI_Dims_create(SIZE, 2, grid_size);
  
- 	/* create 2D cart topology */
-	/*	OLD COMMUNICATOR, TWO DIMENSIONAL, SIZE OF MATRIX (R,C), NO-WRAP
-		NO-REORDER, NEW COMMUNICATOR */
+ 	// CREATE 2D TOPOLOGY
 	MPI_Cart_create(MPI_COMM_WORLD, 2, grid_size, period, 0, &grid_comm);
 
     // GETS THE RANK FROM CARTESIAN COMMUNICATOR AND COORDINATES 
@@ -140,8 +121,6 @@ int main(int argc, char **argv)
 		
 		num_of_items = matrix_row;
         
-        MPI_Cart_coords(grid_comm, cartesian_rank, 2, grid_coords);
-        
 		// SEND ARRAY SIZE TO ALL CARTESIAN PROCESSES
 		for (i = 0; i < SIZE; i++)
 		{
@@ -151,22 +130,6 @@ int main(int argc, char **argv)
 		// SENDS "B" VECTOR AND "A" MATRIX TO CARTESIAN RANK 0
 		MPI_Send(vector, num_of_items, MPI_DOUBLE, 0, 1, grid_comm);
 		MPI_Send(matrix, num_of_items * num_of_items, MPI_DOUBLE, 0, 1, grid_comm);
-		/*
-        for (i = 0; i < num_of_items; i++)
-        {
-			// OWNER OF ROWS IN COLUMN 
-        	dest_coords[0] = BLOCK_OWNER(i, grid_size[0], num_of_items);
-        	dest_coords[1] = 0;
-        	MPI_Cart_rank(grid_comm, dest_coords, &dest_id);
-			//printf("Rank: %d\n", dest_id);
-
-			// OWNER OF COLS IN ROWS
-			dest_coords[1] = BLOCK_OWNER(i, grid_size[1], num_of_items);
-			dest_coords[0] = 0;
-			MPI_Cart_rank(grid_comm, dest_coords, &dest_id);
-			//printf("Rank: %d\n", dest_id);
-			
-    	} */
 
 		// FREE ALLOCATED MEMORY
 		free(matrix);
@@ -182,7 +145,7 @@ int main(int argc, char **argv)
 	
 	// ALLOCATE DYNAMIC MEMORY
 	size = (num_of_items / grid_size[1]);
-	div_B_vector = (double *)calloc(size, sizeof(double));
+	div_vector_B = (double *)calloc(size, sizeof(double));
 	div_matrix_A = (double *)calloc(size * size, sizeof(double));
 	b_vector = (double *)calloc(num_of_items, sizeof(double));
 	matrix_A = (double *)calloc(num_of_items * num_of_items, sizeof(double));
@@ -195,9 +158,7 @@ int main(int argc, char **argv)
 		MPI_Recv(matrix_A, (num_of_items * num_of_items), MPI_DOUBLE, 0, 1, grid_comm, MPI_STATUS_IGNORE);
 	}
 		
-
 	MPI_Barrier(grid_comm);
-	MPI_Cart_coords(grid_comm, cartesian_rank, 2, grid_coords);
 
 	// SCATTER MATRIX A AMONG ALL PROCESSES
 	MPI_Scatter(matrix_A, size * size, MPI_DOUBLE, div_matrix_A, size * size, MPI_DOUBLE, 0, grid_comm);
@@ -210,12 +171,12 @@ int main(int argc, char **argv)
 	// SCATTER "B" VECTOR ACROSS COLUMN COMMUNICATOR
 	if (coords[1] == 0)
 	{
-		MPI_Scatter(b_vector, size, MPI_DOUBLE, div_B_vector, size, MPI_DOUBLE, 0, column_comm);
+		MPI_Scatter(b_vector, size, MPI_DOUBLE, div_vector_B, size, MPI_DOUBLE, 0, column_comm);
 		
-		MPI_Bcast(div_B_vector, size, MPI_DOUBLE, 0, row_comm);
+		MPI_Bcast(div_vector_B, size, MPI_DOUBLE, 0, row_comm);
 	}	
 	MPI_Barrier(grid_comm);
-	MPI_Bcast(div_B_vector, size, MPI_DOUBLE, 0, row_comm);
+	MPI_Bcast(div_vector_B, size, MPI_DOUBLE, 0, row_comm);
 
 	/*row_start = BLOCK_LOW(coords[0],  grid_size[0], num_of_items);
 	row_end   = BLOCK_HIGH(coords[0], grid_size[0], num_of_items);
@@ -233,20 +194,25 @@ int main(int argc, char **argv)
 		for (j = 0; j < size; j++)
 		{
 			k = (i * 4) + j;
-			result += (div_matrix_A[k] * div_B_vector[j]);
+			result += (div_matrix_A[k] * div_vector_B[j]);
 		}
 		multiplication_result[i] = result;
 	}
 
+	// SUMS VALUES ACROSS ROW PROCESSES AND RESULT RETURNED TO C_VECTOR
 	MPI_Barrier(grid_comm);
 	MPI_Reduce(multiplication_result, c_vector, size, MPI_DOUBLE, MPI_SUM, 0, row_comm);
 
+	// CREATES FILE TO OUTPUT "C" VECTOR
 	if (coords[1] == 0)
 	{
 		memset(file_name, '\0', sizeof(file_name));
-		sprintf(file_name, "vector-%d.txt", cartesian_rank);
+		sprintf(file_name, "C-vector-%d", cartesian_rank);
 		output_file = fopen(file_name, "wb");
-		fprintf()
+		for (i = 0; i < size; i++)
+		{
+			fprintf(output_file, "%lf\n", c_vector[i]);
+		}
 	}
 	
   
