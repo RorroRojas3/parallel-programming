@@ -43,7 +43,8 @@ int main(int argc, char **argv)
 	double *b_vector, *matrix_A;
 	double *div_matrix_A;
 	double *div_B_vector;
-	double result  = 0;
+	double *result;
+	double *c_vector;
 	matrix_row = matrix_col = vector_row = vector_col = 0;
 	int size;
 	
@@ -190,12 +191,16 @@ int main(int argc, char **argv)
 
 	// RECEIVES SIZE OF ARRAY
 	MPI_Recv(&num_of_items, 1, MPI_INT, 0, 1, grid_comm, MPI_STATUS_IGNORE);
+	
+	// ALLOCATE DYNAMIC MEMORY
 	size = (num_of_items / grid_size[1]);
 	div_B_vector = (double *)calloc(size, sizeof(double));
 	div_matrix_A = (double *)calloc(size * size, sizeof(double));
 	b_vector = (double *)calloc(num_of_items, sizeof(double));
 	matrix_A = (double *)calloc(num_of_items * num_of_items, sizeof(double));
-	
+	result = (double *)calloc(size, sizeof(double));
+	c_vector = (double *)calloc(size * size, sizeof(double));
+
 	if (cartesian_rank == 0)
 	{
 		MPI_Recv(b_vector, num_of_items, MPI_DOUBLE, 0, 1, grid_comm, MPI_STATUS_IGNORE);
@@ -215,16 +220,13 @@ int main(int argc, char **argv)
 	MPI_Barrier(grid_comm);
 
 	// SCATTER "B" VECTOR ACROSS COLUMN COMMUNICATOR
-	//printf("Rank: %d, Coords: (%d, %d)\n", cartesian_rank, coords[0], coords[1]);
 	if (coords[1] == 0)
 	{
 		MPI_Scatter(b_vector, size, MPI_DOUBLE, div_B_vector, size, MPI_DOUBLE, 0, column_comm);
 		
 		MPI_Bcast(div_B_vector, size, MPI_DOUBLE, 0, row_comm);
-	}
-	
+	}	
 	MPI_Barrier(grid_comm);
-
 	MPI_Bcast(div_B_vector, size, MPI_DOUBLE, 0, row_comm);
 
 	/*row_start = BLOCK_LOW(coords[0],  grid_size[0], num_of_items);
@@ -237,17 +239,33 @@ int main(int argc, char **argv)
 	*/
 
 	
-	for (i = 0; i < 4; i++)
+	for (i = 0; i < size * size; i++)
 	{
-		printf("Rank: %d, ", cartesian_rank);
-		for (j = 0; j < 4; j++)
+		if (cartesian_rank == 0 || cartesian_rank == 1)
 		{
-			k = (i * 4) + j;
-			result = div_matrix_A[k]; //* div_B_vector[j]; //* b_vector[j];
-			printf("%lf ", result);
+			
+			result[i] = div_matrix_A[i]; //* div_B_vector[j]; //* b_vector[j];
+			printf("%lf ", result[i]);
+			if (i % size == 0 && i != 0) {
+				printf("Rank: %d", cartesian_rank);
+				printf("\n");
+			}
 		}
-		printf("\n");
 	}
+
+
+	MPI_Reduce(result, c_vector, size * size, MPI_DOUBLE, MPI_SUM, 0, row_comm);
+	
+	for (i = 0; i < (size * size); i++)
+	{
+		if (cartesian_rank == 0)
+		{
+			if (i % size == 0 && i != 0) printf("\n");
+			printf("%lf ", c_vector[i]);
+		}
+	}
+
+
 	
   
 	MPI_Finalize();
