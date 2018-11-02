@@ -142,9 +142,9 @@ int main(int argc, char **argv)
 
 	// RECEIVES SIZE OF ARRAY
 	MPI_Recv(&num_of_items, 1, MPI_INT, 0, 1, grid_comm, MPI_STATUS_IGNORE);
+	size = (num_of_items / grid_size[1]);
 	
 	// ALLOCATE DYNAMIC MEMORY
-	size = (num_of_items / grid_size[1]);
 	div_vector_B = (double *)calloc(size, sizeof(double));
 	div_matrix_A = (double *)calloc(size * size, sizeof(double));
 	b_vector = (double *)calloc(num_of_items, sizeof(double));
@@ -152,6 +152,7 @@ int main(int argc, char **argv)
 	multiplication_result = (double *)calloc(size, sizeof(double));
 	c_vector = (double *)calloc(size, sizeof(double));
 
+	// CARTESIAN PROCESS 0 RECEIVES B VECTOR AND MATRIX A
 	if (cartesian_rank == 0)
 	{
 		MPI_Recv(b_vector, num_of_items, MPI_DOUBLE, 0, 1, grid_comm, MPI_STATUS_IGNORE);
@@ -164,15 +165,11 @@ int main(int argc, char **argv)
 	MPI_Scatter(matrix_A, size * size, MPI_DOUBLE, div_matrix_A, size * size, MPI_DOUBLE, 0, grid_comm);
 
 	MPI_Barrier(grid_comm);
-	free(matrix_A);
 
-	MPI_Barrier(grid_comm);
-
-	// SCATTER "B" VECTOR ACROSS COLUMN COMMUNICATOR
+	// SCATTER "B" VECTOR ACROSS COLUMN COMMUNICATOR AND BROADCAST B VECTOR TO ROW PROCESSES
 	if (coords[1] == 0)
 	{
 		MPI_Scatter(b_vector, size, MPI_DOUBLE, div_vector_B, size, MPI_DOUBLE, 0, column_comm);
-		
 		MPI_Bcast(div_vector_B, size, MPI_DOUBLE, 0, row_comm);
 	}	
 	MPI_Barrier(grid_comm);
@@ -213,8 +210,17 @@ int main(int argc, char **argv)
 		{
 			fprintf(output_file, "%lf\n", c_vector[i]);
 		}
+		fclose(output_file);
 	}
+
 	
+	// FREE ALLOCATED MEMORY
+	free(div_vector_B);
+	free(div_matrix_A);
+	free(b_vector);
+	free(matrix_A);
+	free(multiplication_result);
+	free(c_vector);
   
 	MPI_Finalize();
 
