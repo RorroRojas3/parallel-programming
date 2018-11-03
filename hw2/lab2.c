@@ -19,12 +19,16 @@
 int main(int argc, char **argv)
 {
     // VARIABLE DECLARATION SECTION
-    int i, j, k;
+    int i, j, k, l;
 	int offset; 
+	int offset2;
 	int num_of_items;  /* total data items in each dim */
 	int SIZE, RANK; /* original rank and size */
 	int cartesian_rank; /* local rank in the 2D topology */
 	int coords[2]; /* local coordinates in the 2D topology */
+	int dest_coord[2];
+	int dest_id;
+	int grid_id;
 	int row_start, row_end, row_count;
 	int col_start, col_end, col_count;
 	int matrix_row, matrix_col, vector_row, vector_col;
@@ -38,6 +42,8 @@ int main(int argc, char **argv)
 	FILE *matrix_file, *vector_file, *output_file;
 	matrix_row = matrix_col = vector_row = vector_col = 0;
 	offset = 0; 
+	offset2 = 0;
+	l = 0;
 
 	// SIZE OF TOPOLOGY IN EACH DIRECTION
 	int grid_size[2] = {0, 0};  
@@ -142,11 +148,13 @@ int main(int argc, char **argv)
 
 	// RECEIVES SIZE OF ARRAY
 	MPI_Recv(&num_of_items, 1, MPI_INT, 0, 1, grid_comm, MPI_STATUS_IGNORE);
-	size = (num_of_items / grid_size[1]);
-	
+	size = (num_of_items / grid_size[0]);
+
+	MPI_Barrier(grid_comm);
+
 	// ALLOCATE DYNAMIC MEMORY
 	div_vector_B = (double *)calloc(size, sizeof(double));
-	div_matrix_A = (double *)calloc(size * size, sizeof(double));
+	div_matrix_A = (double *)calloc(num_of_items * size, sizeof(double));
 	b_vector = (double *)calloc(num_of_items, sizeof(double));
 	matrix_A = (double *)calloc(num_of_items * num_of_items, sizeof(double));
 	multiplication_result = (double *)calloc(size, sizeof(double));
@@ -162,36 +170,90 @@ int main(int argc, char **argv)
 	MPI_Barrier(grid_comm);
 
 	// SCATTER MATRIX A AMONG ALL PROCESSES
-	MPI_Scatter(matrix_A, size * size, MPI_DOUBLE, div_matrix_A, size * size, MPI_DOUBLE, 0, grid_comm);
+	//MPI_Scatter(matrix_A, size * size, MPI_DOUBLE, div_matrix_A, size * size, MPI_DOUBLE, 0, grid_comm);
+
+	/*	row_start = BLOCK_LOW(coords[0],  grid_size[0], num_of_items);
+		row_end   = BLOCK_HIGH(coords[0], grid_size[0], num_of_items);
+		row_count   = BLOCK_SIZE(coords[0], grid_size[0], num_of_items); 
+		col_start = BLOCK_LOW(coords[1],  grid_size[1], num_of_items);
+		col_end   = BLOCK_HIGH(coords[1], grid_size[1], num_of_items); 
+		col_count   = BLOCK_SIZE(coords[1], grid_size[1], num_of_items); 
+	*/
+	
+	MPI_Barrier(grid_comm);
+
+	for (i = 0; i < num_of_items; i++)
+	{
+		dest_coord[0] = BLOCK_OWNER(i, grid_size[0], num_of_items);
+		dest_coord[1] = 0;
+		MPI_Cart_rank(grid_comm, dest_coord, &dest_id);
+		if (cartesian_rank == 0)
+		{
+			MPI_Send(&(matrix_A[offset]), num_of_items, MPI_DOUBLE, dest_id, 1, grid_comm);
+			offset += num_of_items;
+		}
+		if (cartesian_rank == dest_id)
+		{
+			MPI_Recv(&(div_matrix_A[offset2]), num_of_items, MPI_DOUBLE, 0, 1, grid_comm, MPI_STATUS_IGNORE);
+			offset2 += num_of_items;
+		}
+	}
+	
+	MPI_Barrier(grid_comm);
+
+	//if (coords[1] == 0)
+	//{
+//		MPI_Bcast(div_matrix_A, (num_of_items * size), MPI_DOUBLE, 0, row_comm);
+//	}
+
+	MPI_Barrier(grid_comm);
+
+	MPI_Bcast(div_matrix_A, (num_of_items * size), MPI_DOUBLE, 0, row_comm);
+
+	if (cartesian_rank == 2)
+	{
+	for (i = 0; i < size; i++)
+	{
+		for (j = 0; j < num_of_items; j++)
+		{
+			printf("%lf ", div_matrix_A[(i * size) + j]);
+		}
+		printf("\n");
+	}
+	}
 
 	MPI_Barrier(grid_comm);
 
 	// SCATTER "B" VECTOR ACROSS COLUMN COMMUNICATOR AND BROADCAST B VECTOR TO ROW PROCESSES
-	if (coords[1] == 0)
+	if (coords[0] == 0)
 	{
-		MPI_Scatter(b_vector, size, MPI_DOUBLE, div_vector_B, size, MPI_DOUBLE, 0, column_comm);
-		MPI_Bcast(div_vector_B, size, MPI_DOUBLE, 0, row_comm);
+		MPI_Scatter(b_vector, size, MPI_DOUBLE, div_vector_B, num_of_items, MPI_DOUBLE, 0, row_comm);
+		
 	}	
 	MPI_Barrier(grid_comm);
-	MPI_Bcast(div_vector_B, size, MPI_DOUBLE, 0, row_comm);
 
-	/*row_start = BLOCK_LOW(coords[0],  grid_size[0], num_of_items);
-	row_end   = BLOCK_HIGH(coords[0], grid_size[0], num_of_items);
-	row_cnt   = BLOCK_SIZE(coords[0], grid_size[0], num_of_items); 
+	MPI_Bcast(div_vector_B, size, MPI_DOUBLE, 0, column_comm);
 
+	MPI_Barrier(grid_comm);
+
+	//row_start = BLOCK_LOW(coords[0],  grid_size[0], num_of_items);
+	//	row_end   = BLOCK_HIGH(coords[0], grid_size[0], num_of_items);
+	//	row_count   = BLOCK_SIZE(coords[0], grid_size[0], num_of_items); 
 	col_start = BLOCK_LOW(coords[1],  grid_size[1], num_of_items);
 	col_end   = BLOCK_HIGH(coords[1], grid_size[1], num_of_items); 
-	col_cnt   = BLOCK_SIZE(coords[1], grid_size[1], num_of_items); 
-	*/
+	//	col_count   = BLOCK_SIZE(coords[1], grid_size[1], num_of_items); 
 
 	// MATRIX MULTIPLICATION
 	for (i = 0; i < size; i++)
 	{
 		result = 0;
-		for (j = 0; j < size; j++)
+		l = 0;
+		for (j = col_start; j <= col_end; j++)
 		{
-			k = (i * 4) + j;
-			result += (div_matrix_A[k] * div_vector_B[j]);
+			k = (i * size) + j;
+			result += (div_matrix_A[k] * div_vector_B[l]);
+			//if (cartesian_rank == 1) {printf("%d, %d %lf\n", col_start, col_end, div_matrix_A[k]);}
+			l++;
 		}
 		multiplication_result[i] = result;
 	}
