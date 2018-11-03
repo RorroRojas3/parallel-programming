@@ -210,17 +210,18 @@ int main(int argc, char **argv)
 
 	MPI_Bcast(div_matrix_A, (num_of_items * size), MPI_DOUBLE, 0, row_comm);
 
-	if (cartesian_rank == 2)
+	/*
+	if (cartesian_rank == 3)
 	{
-	for (i = 0; i < size; i++)
-	{
-		for (j = 0; j < num_of_items; j++)
+		for (i = 0; i < size; i++)
 		{
-			printf("%lf ", div_matrix_A[(i * size) + j]);
+			for (j = 0; j < num_of_items; j++)
+			{
+				printf("%lf ", div_matrix_A[(i * num_of_items) + j]);
+			}
+			printf("\n");
 		}
-		printf("\n");
-	}
-	}
+	}*/
 
 	MPI_Barrier(grid_comm);
 
@@ -250,12 +251,14 @@ int main(int argc, char **argv)
 		l = 0;
 		for (j = col_start; j <= col_end; j++)
 		{
-			k = (i * size) + j;
+			k = (i * num_of_items) + j;
 			result += (div_matrix_A[k] * div_vector_B[l]);
-			//if (cartesian_rank == 1) {printf("%d, %d %lf\n", col_start, col_end, div_matrix_A[k]);}
+			//if (cartesian_rank == 1) {printf("%d, %d %lf\n", col_start, col_end, div_vector_B[l]);}
+			//if (cartesia)
 			l++;
 		}
 		multiplication_result[i] = result;
+		//if (cartesian_rank == 0) { printf("%.2lf ", multiplication_result[i]); }
 	}
 
 	// SUMS VALUES ACROSS ROW PROCESSES AND RESULT RETURNED TO C_VECTOR
