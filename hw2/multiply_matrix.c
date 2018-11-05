@@ -12,7 +12,6 @@ int main(int argc, char *argv[])
     double **matrix1, **matrix2, **output_matrix;
     double result = 0;
     matrix_row1 = matrix_col1 = matrix_row2 = matrix_col2 = 0;
-    time_t start, end;
 
     /*  DISPLAYS HOW TO RUN PROGRAM */
     if (argc != 4)
@@ -93,6 +92,8 @@ int main(int argc, char *argv[])
 
     
     /* CALCULATE OUTPUT MATRIX */
+    clock_t start, end;
+    start = clock();
     for (i = 0; i < matrix_row1; i++)
     {
         for (j = 0; j < matrix_col2; j++)
@@ -105,6 +106,8 @@ int main(int argc, char *argv[])
             result = 0;
         }
     }
+    end = clock();
+    printf("Time (us): %.5f\n", ((double)(end - start) / CLOCKS_PER_SEC) * 1000000);
 
     /* STORE MULTIPLICATION IN BINARY FILE  */
     fprintf(output_matrix_file, "%d %d\n",   matrix_row1, matrix_col2);
