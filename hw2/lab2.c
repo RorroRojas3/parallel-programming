@@ -135,10 +135,8 @@ int main(int argc, char **argv)
 
 		// SENDS "B" VECTOR AND "A" MATRIX TO CARTESIAN RANK 0
 		MPI_Send(vector, num_of_items, MPI_DOUBLE, 0, 1, grid_comm);
-		MPI_Send(matrix, num_of_items * num_of_items, MPI_DOUBLE, 0, 1, grid_comm);
 
 		// FREE ALLOCATED MEMORY
-		free(matrix);
 		free(vector);
 
 		// CLOSE OPENED FILES 
@@ -156,7 +154,6 @@ int main(int argc, char **argv)
 	div_vector_B = (double *)calloc(size, sizeof(double));
 	div_matrix_A = (double *)calloc(num_of_items * size, sizeof(double));
 	b_vector = (double *)calloc(num_of_items, sizeof(double));
-	matrix_A = (double *)calloc(num_of_items * num_of_items, sizeof(double));
 	multiplication_result = (double *)calloc(size, sizeof(double));
 	c_vector = (double *)calloc(size, sizeof(double));
 
@@ -164,24 +161,9 @@ int main(int argc, char **argv)
 	if (cartesian_rank == 0)
 	{
 		MPI_Recv(b_vector, num_of_items, MPI_DOUBLE, 0, 1, grid_comm, MPI_STATUS_IGNORE);
-		MPI_Recv(matrix_A, (num_of_items * num_of_items), MPI_DOUBLE, 0, 1, grid_comm, MPI_STATUS_IGNORE);
 	}
 		
-	MPI_Barrier(grid_comm);
-
-	// SCATTER MATRIX A AMONG ALL PROCESSES
-	//MPI_Scatter(matrix_A, size * size, MPI_DOUBLE, div_matrix_A, size * size, MPI_DOUBLE, 0, grid_comm);
-
-	/*	row_start = BLOCK_LOW(coords[0],  grid_size[0], num_of_items);
-		row_end   = BLOCK_HIGH(coords[0], grid_size[0], num_of_items);
-		row_count   = BLOCK_SIZE(coords[0], grid_size[0], num_of_items); 
-		col_start = BLOCK_LOW(coords[1],  grid_size[1], num_of_items);
-		col_end   = BLOCK_HIGH(coords[1], grid_size[1], num_of_items); 
-		col_count   = BLOCK_SIZE(coords[1], grid_size[1], num_of_items); 
-	*/
-	
-	MPI_Barrier(grid_comm);
-
+	// SENDS CORRESPONDING ROW OF MATRIX "A" TO ROOT OF EACH ROW
 	for (i = 0; i < num_of_items; i++)
 	{
 		dest_coord[0] = BLOCK_OWNER(i, grid_size[0], num_of_items);
@@ -189,7 +171,7 @@ int main(int argc, char **argv)
 		MPI_Cart_rank(grid_comm, dest_coord, &dest_id);
 		if (cartesian_rank == 0)
 		{
-			MPI_Send(&(matrix_A[offset]), num_of_items, MPI_DOUBLE, dest_id, 1, grid_comm);
+			MPI_Send(&(matrix[offset]), num_of_items, MPI_DOUBLE, dest_id, 1, grid_comm);
 			offset += num_of_items;
 		}
 		if (cartesian_rank == dest_id)
@@ -199,52 +181,24 @@ int main(int argc, char **argv)
 		}
 	}
 	
-	MPI_Barrier(grid_comm);
-
-	//if (coords[1] == 0)
-	//{
-//		MPI_Bcast(div_matrix_A, (num_of_items * size), MPI_DOUBLE, 0, row_comm);
-//	}
 
 	MPI_Barrier(grid_comm);
 
 	MPI_Bcast(div_matrix_A, (num_of_items * size), MPI_DOUBLE, 0, row_comm);
 
-	/*
-	if (cartesian_rank == 3)
-	{
-		for (i = 0; i < size; i++)
-		{
-			for (j = 0; j < num_of_items; j++)
-			{
-				printf("%lf ", div_matrix_A[(i * num_of_items) + j]);
-			}
-			printf("\n");
-		}
-	}*/
-
-	MPI_Barrier(grid_comm);
-
 	// SCATTER "B" VECTOR ACROSS COLUMN COMMUNICATOR AND BROADCAST B VECTOR TO ROW PROCESSES
 	if (coords[0] == 0)
 	{
 		MPI_Scatter(b_vector, size, MPI_DOUBLE, div_vector_B, num_of_items, MPI_DOUBLE, 0, row_comm);
-		
 	}	
+
 	MPI_Barrier(grid_comm);
 
 	MPI_Bcast(div_vector_B, size, MPI_DOUBLE, 0, column_comm);
 
-	MPI_Barrier(grid_comm);
-
-	//row_start = BLOCK_LOW(coords[0],  grid_size[0], num_of_items);
-	//	row_end   = BLOCK_HIGH(coords[0], grid_size[0], num_of_items);
-	//	row_count   = BLOCK_SIZE(coords[0], grid_size[0], num_of_items); 
+	// MATRIX MULTIPLICATION
 	col_start = BLOCK_LOW(coords[1],  grid_size[1], num_of_items);
 	col_end   = BLOCK_HIGH(coords[1], grid_size[1], num_of_items); 
-	//	col_count   = BLOCK_SIZE(coords[1], grid_size[1], num_of_items); 
-
-	// MATRIX MULTIPLICATION
 	for (i = 0; i < size; i++)
 	{
 		result = 0;
@@ -253,12 +207,9 @@ int main(int argc, char **argv)
 		{
 			k = (i * num_of_items) + j;
 			result += (div_matrix_A[k] * div_vector_B[l]);
-			//if (cartesian_rank == 1) {printf("%d, %d %lf\n", col_start, col_end, div_vector_B[l]);}
-			//if (cartesia)
 			l++;
 		}
 		multiplication_result[i] = result;
-		//if (cartesian_rank == 0) { printf("%.2lf ", multiplication_result[i]); }
 	}
 
 	// SUMS VALUES ACROSS ROW PROCESSES AND RESULT RETURNED TO C_VECTOR
@@ -277,13 +228,15 @@ int main(int argc, char **argv)
 		}
 		fclose(output_file);
 	}
-
 	
 	// FREE ALLOCATED MEMORY
+	if (cartesian_rank == 0) 
+	{ 
+		free(matrix); 
+	}
 	free(div_vector_B);
 	free(div_matrix_A);
 	free(b_vector);
-	free(matrix_A);
 	free(multiplication_result);
 	free(c_vector);
   

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define MAXLENGTH 256
 
@@ -11,6 +12,7 @@ int main(int argc, char *argv[])
     double **matrix1, **matrix2, **output_matrix;
     double result = 0;
     matrix_row1 = matrix_col1 = matrix_row2 = matrix_col2 = 0;
+    time_t start, end;
 
     /*  DISPLAYS HOW TO RUN PROGRAM */
     if (argc != 4)
@@ -89,6 +91,7 @@ int main(int argc, char *argv[])
         }
     }
 
+    
     /* CALCULATE OUTPUT MATRIX */
     for (i = 0; i < matrix_row1; i++)
     {
