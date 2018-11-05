@@ -199,8 +199,8 @@ int main(int argc, char **argv)
 	// MATRIX MULTIPLICATION
 	col_start = BLOCK_LOW(coords[1],  grid_size[1], num_of_items);
 	col_end   = BLOCK_HIGH(coords[1], grid_size[1], num_of_items); 
-	//double start, end;
-	//start = MPI_Wtime();
+	double start, end;
+	start = MPI_Wtime();
 	for (i = 0; i < size; i++)
 	{
 		result = 0;
@@ -213,8 +213,8 @@ int main(int argc, char **argv)
 		}
 		multiplication_result[i] = result;
 	}
-	//end = MPI_Wtime();
-	//printf("Time: %.3f\n", end - start);
+	end = MPI_Wtime();
+	printf("Time: %.20f\n", end - start);
 
 	// SUMS VALUES ACROSS ROW PROCESSES AND RESULT RETURNED TO C_VECTOR
 	MPI_Barrier(grid_comm);
