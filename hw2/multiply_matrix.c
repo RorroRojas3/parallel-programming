@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
         }
     }
     end = clock();
-    printf("Time (us): %.5f\n", ((double)(end - start) / CLOCKS_PER_SEC) * 1000000);
+    printf("Time (us): %.10f\n", ((double)(end - start) / CLOCKS_PER_SEC));
 
     /* STORE MULTIPLICATION IN BINARY FILE  */
     fprintf(output_matrix_file, "%d %d\n",   matrix_row1, matrix_col2);
