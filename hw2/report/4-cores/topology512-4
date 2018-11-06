@@ -1,0 +1,21 @@
+New Matrix size: 512x1
+Time: 0.00062704086303710938
+Time: 0.00056695938110351562
+Time: 0.00051498413085937500
+Time: 0.00051307678222656250
+ 
+ 
++------------------------------------------+ 
+| PALMETTO CLUSTER PBS RESOURCES REQUESTED | 
++------------------------------------------+ 
+ 
+mem=4gb,ncpus=4,walltime=00:10:00
+ 
+ 
++-------------------------------------+ 
+| PALMETTO CLUSTER PBS RESOURCES USED | 
++-------------------------------------+ 
+ 
+cpupercent=100,cput=00:00:01,mem=764kb,ncpus=4,vmem=12908kb,walltime=00:00:01
+ 
+ 
