@@ -1,0 +1,28 @@
+Name: Rodrigo Ignacio Rojas Garcia
+Course: ECE 4370
+HW#2
+
+FILES:
+	- make_matrix.c
+		-> 	First Program. Creates a matrix/vector and outputs it as a binary file.
+	- print_matrix.c
+		-> 	Second Program. Prints input matrix/vector in terminal.
+	- multiply_matrix.c
+		-> 	Third Program. Sequential program which 
+			performs matrix multiplication with matrix and vector
+			input files and outputs the result as binary file.
+	- lab2.c
+		->	Fourth Program. Parallel program which performs matrix multiplciation
+			with matrix and vector input files and output the result as binary set of files.
+	- topology.pbs
+		->	Bash script which submits topology executable to the Palmetto cluster.
+	- create.sh
+		-> 	Bash script which runs "make_matrix.c" program to create a matrix and a vector.
+	- run.sh
+		-> 	Bash script which compiles the first three programs.
+	- prun.sh
+		-> Bash script which compiles and runs fourth program.
+	- report
+		-> 	Folder which contains the output of Palmetto cluster files with the parallel
+			program running with 4, 8, 9, 16, and 25 cores with different matrix size problems.
+			It also contains the final report "report-done.pdf".
