@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
+#include <time.h>
 
 #define MAXLENGTH 256
 
@@ -11,6 +12,8 @@ int main(int argc, char *argv[])
     int i, j, k, matrix_row1, matrix_col1, matrix_row2, matrix_col2;
     double **matrix1, **matrix2, **output_matrix;
     matrix_row1 = matrix_col1 = matrix_row2 = matrix_col2 = 0;
+    clock_t start_time, end_time;
+    double cpu_time_used = 0;
 
     /*  DISPLAYS HOW TO RUN PROGRAM */
     if (argc != 4)
@@ -89,7 +92,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    /* CALCULATE OUTPUT MATRIX */;
+    start_time = clock();
+    /* CALCULATE OUTPUT MATRIX */
     #pragma omp parallel for private(j, k)
     for (i = 0; i < matrix_row1; i++)
     {
@@ -101,6 +105,9 @@ int main(int argc, char *argv[])
             }   
         }
     }
+    end_time = clock();
+    cpu_time_used = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
+    printf("Parallel time: %.10f\n", cpu_time_used);
 
     /* STORE MULTIPLICATION IN BINARY FILE  */
     fprintf(output_matrix_file, "%d %d\n",   matrix_row1, matrix_col2);
