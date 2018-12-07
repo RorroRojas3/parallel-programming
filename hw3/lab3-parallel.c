@@ -16,6 +16,7 @@ int main(int argc, char *argv[])
     double cpu_time_used = 0;
 
     /*  DISPLAYS HOW TO RUN PROGRAM */
+    
     if (argc != 4)
     {
         printf("Usage: ./executable matrix1_file matrix2_file output_matrix_file\n");
