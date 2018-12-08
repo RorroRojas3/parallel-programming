@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -N result
-#PBS -l select=1:ncpus=2:mem=2gb:interconnect=1g
+#PBS -l select=1:ncpus=8:mem=2gb:interconnect=1g
 #PBS -l walltime=00:10:00
 #PBS -j oe
 
@@ -11,4 +11,4 @@ NCORES=`qstat -xf $PBS_JOBID | grep List.ncpus | sed 's/^.\{26\}//'`
 ##cd $PBS_O_WORKDIR
 cd /home/rrojas/parallel-programming/hw3/
 
-mpiexec -n $NCORES ./parallel matrix vector out
+./parallel matrix vector out1 2

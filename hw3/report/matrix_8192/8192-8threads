@@ -1,0 +1,19 @@
+New Matrix size: 8192x1
+Number of threads: 8
+Parallel time: 0.176552852150052785873413085938
+ 
+ 
++------------------------------------------+ 
+| PALMETTO CLUSTER PBS RESOURCES REQUESTED | 
++------------------------------------------+ 
+ 
+mem=2gb,ncpus=8,walltime=00:10:00
+ 
+ 
++-------------------------------------+ 
+| PALMETTO CLUSTER PBS RESOURCES USED | 
++-------------------------------------+ 
+ 
+cpupercent=110,cput=00:00:18,mem=472332kb,ncpus=8,vmem=764216kb,walltime=00:00:17
+ 
+ 
