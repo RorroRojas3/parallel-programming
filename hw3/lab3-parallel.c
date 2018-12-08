@@ -12,14 +12,15 @@ int main(int argc, char *argv[])
     int i, j, k, matrix_row1, matrix_col1, matrix_row2, matrix_col2;
     double **matrix1, **matrix2, **output_matrix;
     matrix_row1 = matrix_col1 = matrix_row2 = matrix_col2 = 0;
-    clock_t start_time, end_time;
+    double start_time, end_time;
     double cpu_time_used = 0;
+    int num_threads = 0;
 
     /*  DISPLAYS HOW TO RUN PROGRAM */
     
-    if (argc != 4)
+    if (argc != 5)
     {
-        printf("Usage: ./executable matrix1_file matrix2_file output_matrix_file\n");
+        printf("Usage: ./executable matrix1_file matrix2_file output_matrix_file number_of_threads\n");
         exit(1);
     }
 
@@ -45,6 +46,7 @@ int main(int argc, char *argv[])
         fclose(matrix_file2);
         exit(1);
     }
+    num_threads = atoi(argv[4]);
 
     /* GETS SIZE OF SQUARE MATRIX */
     fscanf(matrix_file1, "%d %d", &matrix_row1, &matrix_col1);
@@ -93,9 +95,10 @@ int main(int argc, char *argv[])
         }
     }
 
-    start_time = clock();
+    start_time = omp_get_wtime();
     /* CALCULATE OUTPUT MATRIX */
-	omp_set_num_threads(8);
+	omp_set_num_threads(num_threads);
+    printf("Number of threads: %d\n", num_threads);
 	#pragma omp parallel for private(j, k)
     for (i = 0; i < matrix_row1; i++)
     {
@@ -107,9 +110,9 @@ int main(int argc, char *argv[])
             }   
         }
     }
-    end_time = clock();
-    cpu_time_used = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
-    printf("Parallel time: %.20f\n", cpu_time_used);
+    end_time = omp_get_wtime();
+    cpu_time_used = end_time - start_time;
+    printf("Parallel time: %.30f\n", cpu_time_used);
 
     /* STORE MULTIPLICATION IN BINARY FILE  */
     fprintf(output_matrix_file, "%d %d\n",   matrix_row1, matrix_col2);
