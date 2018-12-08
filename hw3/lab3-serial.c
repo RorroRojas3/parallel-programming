@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
     }
     end_time = clock();
     cpu_time_used = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
-    printf("Sequential time: %.10f\n", cpu_time_used);
+    printf("Sequential time: %.20f\n", cpu_time_used);
 
     /* STORE MULTIPLICATION IN BINARY FILE  */
     fprintf(output_matrix_file, "%d %d\n",   matrix_row1, matrix_col2);

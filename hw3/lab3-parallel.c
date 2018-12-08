@@ -95,7 +95,8 @@ int main(int argc, char *argv[])
 
     start_time = clock();
     /* CALCULATE OUTPUT MATRIX */
-    #pragma omp parallel for private(j, k)
+	omp_set_num_threads(8);
+	#pragma omp parallel for private(j, k)
     for (i = 0; i < matrix_row1; i++)
     {
         for (j = 0; j < matrix_col2; j++)
@@ -108,7 +109,7 @@ int main(int argc, char *argv[])
     }
     end_time = clock();
     cpu_time_used = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
-    printf("Parallel time: %.10f\n", cpu_time_used);
+    printf("Parallel time: %.20f\n", cpu_time_used);
 
     /* STORE MULTIPLICATION IN BINARY FILE  */
     fprintf(output_matrix_file, "%d %d\n",   matrix_row1, matrix_col2);

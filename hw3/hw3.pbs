@@ -1,6 +1,6 @@
 #!/bin/bash
-#PBS -N topology
-#PBS -l select=1:ncpus=2:mpiprocs=2:mem=2gb:interconnect=1g
+#PBS -N result
+#PBS -l select=1:ncpus=4:mpiprocs=8:mem=2gb:interconnect=1g
 #PBS -l walltime=00:10:00
 #PBS -j oe
 
