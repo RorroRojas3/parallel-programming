@@ -95,10 +95,10 @@ int main(int argc, char *argv[])
         }
     }
 
-    start_time = omp_get_wtime();
     /* CALCULATE OUTPUT MATRIX */
 	omp_set_num_threads(num_threads);
     printf("Number of threads: %d\n", num_threads);
+	start_time = omp_get_wtime();
 	#pragma omp parallel for private(j, k)
     for (i = 0; i < matrix_row1; i++)
     {
